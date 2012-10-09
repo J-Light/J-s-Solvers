@@ -1,0 +1,17 @@
+EXE_INC = \
+    -IlnInclude \
+    -I$(LIB_SRC)/turbulenceModels \
+    -I$(LIB_SRC)/turbulenceModels/compressible/RAS/RASModel \
+    -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/reactionThermo/lnInclude \
+    -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
+    -I$(LIB_SRC)/finiteVolume/lnInclude
+
+EXE_LIBS = \
+    -lrhoCentralFoam \
+    -lcompressibleRASModels \
+    -lreactionThermophysicalModels \
+    -lfiniteVolume \
+    -lgenericPatchFields \
+    -lspecie \
+    -lbasicThermophysicalModels
