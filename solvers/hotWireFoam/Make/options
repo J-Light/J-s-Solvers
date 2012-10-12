@@ -1,5 +1,5 @@
 EXE_INC = \
-    -IBCs/lnInclude \
+    -I$(FOAM_APP)/solvers/compressible/rhoCentralFoam/BCs/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/basic/lnInclude \
     -I$(LIB_SRC)/thermophysicalModels/specie/lnInclude \
