@@ -33,6 +33,7 @@ Description
 #include "fvCFD.H"
 #include "basicPsiThermo.H"
 #include "turbulenceModel.H"
+#include "wallFvPatch.H"
 #include "zeroGradientFvPatchFields.H"
 #include "fixedRhoFvPatchScalarField.H"
 #include "boundMinMax.H"
@@ -52,11 +53,16 @@ int main(int argc, char *argv[])
     // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
     #include "readFluxScheme.H"
-
+  
     dimensionedScalar v_zero("v_zero", dimVolume/dimTime, 0.0);
     dimensionedScalar smallU("smallU", dimVelocity, ROOTVSMALL);
+    dimensionedScalar gamma("gamma",dimless, 1.4);
+    dimensionedScalar oldQdot("oldQdot",dimless, 0);
+	dimensionedScalar NormFactHeatFlux("NormFactHeatFlux",dimless, 0);
+    volScalarField eOld = e;
 
     Info<< "\nStarting time loop\n" << endl;
+    
 
     while (runTime.run())
     {
@@ -182,13 +188,13 @@ int main(int argc, char *argv[])
         // --- Solve density
         solve(fvm::ddt(rho) + fvc::div(phi));
         
-        Info<<"\nMin Value of rho inviscid:"<<min(rho).value()<<"  "<<max(rho).value()<<'\n';
+        //Info<<"\nMin Value of rho inviscid:"<<min(rho).value()<<"  "<<max(rho).value()<<'\n';
         boundMinMax(rho,rhoMin, rhoMax);
 
         // --- Solve momentum
         solve(fvm::ddt(rhoU) + fvc::div(phiUp));
         
-        Info<<"\nMin Value of RhoUmag inviscid:"<<min(sqrt(magSqr(rhoU))).value()<<"  "<<max(sqrt(magSqr(rhoU))).value()<<'\n';
+        //Info<<"\nMin Value of RhoUmag inviscid:"<<min(sqrt(magSqr(rhoU))).value()<<"  "<<max(sqrt(magSqr(rhoU))).value()<<'\n';
 
         U.dimensionedInternalField() =
             rhoU.dimensionedInternalField()
@@ -215,7 +221,7 @@ int main(int argc, char *argv[])
         
         rhoU.boundaryField() = rho.boundaryField()*U.boundaryField();
         magU = mag(U);
-        Info<<"\nMin Value of Umag inviscid:"<<min(magU).value()<<"  "<<max(magU).value()<<'\n';
+        //Info<<"\nMin Value of Umag inviscid:"<<min(magU).value()<<"  "<<max(magU).value()<<'\n';
                 
         volScalarField rhoBydt(rho/runTime.deltaT());
 
@@ -247,16 +253,16 @@ int main(int argc, char *argv[])
           - fvc::div(sigmaDotU)
         );
         
-        Info<<"\nMin Value of rhoE inviscid:"<<min(rhoE).value()<<'\n';
+      //  Info<<"\nMin Value of rhoE inviscid:"<<min(rhoE).value()<<'\n';
         boundMinMax(rhoE, rhoEMin, rhoEMax);
         
         e = rhoE/rho - 0.5*magSqr(U);
         e.correctBoundaryConditions();
         
-        Info<<"\nMin Value of e inviscid:"<<min(e).value()<<'\n';
+      //  Info<<"\nMin Value of e inviscid:"<<min(e).value()<<'\n';
         boundMinMax(e, eMin, eMax);
         
-        Info<<"\nMin Value of T inviscid:"<<min(T).value()<<'\n';
+      //  Info<<"\nMin Value of T inviscid:"<<min(T).value()<<'\n';
         thermo.correct();
         
         rhoE.boundaryField() =
@@ -275,7 +281,7 @@ int main(int argc, char *argv[])
               + fvc::laplacian(turbulence->alpha(), e)
               - fvc::laplacian(k, T)
             );
-            Info<<"\nMin Value of E viscous:"<<min(e).value()<<'\n';
+           // Info<<"\nMin Value of E viscous:"<<min(e).value()<<'\n';
             boundMinMax(e, eMin, eMax);
             
             thermo.correct();
@@ -290,6 +296,59 @@ int main(int argc, char *argv[])
         rho.boundaryField() = psi.boundaryField()*p.boundaryField();
 
         turbulence->correct();
+        
+        surfaceScalarField heatFlux
+        (
+            fvc::interpolate(turbulence->alphaEff())*gamma*fvc::snGrad(e)
+        );
+
+        const surfaceScalarField::GeometricBoundaryField& patchHeatFlux =
+            heatFlux.boundaryField();
+		
+		forAll(patchHeatFlux, patchi)
+		{
+			if (isA<wallFvPatch>(mesh.boundary()[patchi]))
+			{
+				dimensionedScalar tHeatFlux= gSum
+                       (
+                           mesh.magSf().boundaryField()[patchi]
+                          *patchHeatFlux[patchi]
+                       );
+				Info<<"\nWall heat fluxes [W]: "
+					<< tHeatFlux.value() <<endl;
+				
+				dimensionedScalar 
+					resHeatFlux 
+					= 	
+					mag(tHeatFlux-oldQdot)/runTime.deltaTValue();
+					
+				Info<<"Heat Flux residual: "
+					<<resHeatFlux.value()<<endl;
+				oldQdot=tHeatFlux;
+			}
+			
+		}
+        //label TimeIdx=runTime.timeIndex();
+        //if (TimeIdx< 100)
+		//{
+			//Info<<"Setting old values";
+			//eOld = e;
+		//}
+		//else
+		//{
+			//volScalarField eDiff = e-eOld;
+			//volScalarField SquardRes = sqr(eDiff/runTime.deltaTValue());
+			//dimensionedScalar ResidualE = sqrt(sum(SquardRes)); 
+			//if (TimeIdx < 110 )
+			//{
+				//if (ResidualE > NormResE)
+				//{
+					//NormResE=ResidualE;
+				//}
+			//}
+			//dimensionedScalar NResE=ResidualE/NormResE;
+			//Info<<"The residual is: "<<NResE.value()<< endl;
+		//}
 
         runTime.write();
 
