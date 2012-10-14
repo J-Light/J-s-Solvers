@@ -36,6 +36,7 @@ Description
 #include "wallFvPatch.H"
 #include "zeroGradientFvPatchFields.H"
 #include "fixedRhoFvPatchScalarField.H"
+#include "hotWireControl.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -58,10 +59,12 @@ int main(int argc, char *argv[])
     dimensionedScalar oldQdot("oldQdot",dimless, 0);
 	dimensionedScalar NormFactHeatFlux("NormFactHeatFlux",dimless, 0);
     volScalarField eOld = e;
+    
+    hotWireControl hWcontrol(mesh);
 
     Info<< "\nStarting time loop\n" << endl;
 
-    while (runTime.run())
+    while (runTime.run() && hWcontrol.loop())
     {
         // --- upwind interpolation of primitive fields on faces
 
