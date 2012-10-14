@@ -48,7 +48,7 @@ bool Foam::hotWireControl::criteriaSatisfied()
     {
         return false;
     }
-
+    
     bool achieved = true;
     bool checked = false;    // safety that some checks were indeed performed
 
@@ -59,22 +59,42 @@ bool Foam::hotWireControl::criteriaSatisfied()
         const label fieldI = applyToField(variableName);
         if (fieldI != -1)
         {
-            const List<lduMatrix::solverPerformance> sp(iter().stream());
-            const scalar residual = sp.first().initialResidual();
-
+			const volScalarField& vsfCurrent =
+            this->mesh_.objectRegistry::lookupObject<volScalarField>
+            (
+				variableName
+            );
+            const volScalarField& vsfPast = vsfCurrent.oldTime();
+            const volScalarField& diffVals
+            (	
+				mag(vsfCurrent-vsfPast)
+			);
+            
+            const dimensionedScalar residual = gSum(diffVals);
+            
             checked = true;
-
-            bool absCheck = residual < residualControl_[fieldI].absTol;
+            
+            bool absCheck = 
+				residual.value() < residualControl_[fieldI].absTol;
+				
             achieved = achieved && absCheck;
+			//Info<<iter().value();
+            //const List<lduMatrix::solverPerformance> sp(iter().stream());
+            //const scalar residual = sp.first().initialResidual();
 
-            if (debug)
-            {
-                Info<< algorithmName_ << " solution statistics:" << endl;
+            //checked = true;
 
-                Info<< "    " << variableName << ": tolerance = " << residual
-                    << " (" << residualControl_[fieldI].absTol << ")"
-                    << endl;
-            }
+            //bool absCheck = residual < residualControl_[fieldI].absTol;
+            //achieved = achieved && absCheck;
+
+            //if (debug)
+            //{
+                //Info<< algorithmName_ << " solution statistics:" << endl;
+
+                //Info<< "    " << variableName << ": tolerance = " << residual
+                    //<< " (" << residualControl_[fieldI].absTol << ")"
+                    //<< endl;
+            //}
         }
     }
 
@@ -149,7 +169,7 @@ bool Foam::hotWireControl::loop()
     }
 
 
-    return time.loop();
+    return true;
 }
 
 
