@@ -279,7 +279,7 @@ int main(int argc, char *argv[])
 				dimensionedScalar 
 					resHeatFlux 
 					= 	
-					mag(tHeatFlux-oldQdot)/runTime.deltaTValue();
+					mag(tHeatFlux-oldQdot)/mag(tHeatFlux);
 					
 				Info<<"Heat Flux residual: "
 					<<resHeatFlux.value()<<endl;
