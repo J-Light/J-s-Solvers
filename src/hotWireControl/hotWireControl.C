@@ -67,17 +67,17 @@ bool Foam::hotWireControl::criteriaSatisfied()
             const volScalarField& vsfPast = vsfCurrent.oldTime();
             const volScalarField& diffVals
             (	
-				mag(vsfCurrent-vsfPast)
+				mag(vsfCurrent-vsfPast)/mag(vsfCurrent)
 			);
             
-            const dimensionedScalar residual = gSum(diffVals);
+            const dimensionedScalar residual = gMax(diffVals);
             
             checked = true;
             
             bool absCheck = 
 				residual.value() < residualControl_[fieldI].absTol;
 				
-            achieved = achieved && absCheck;
+            achieved = checked && absCheck;
 			//Info<<iter().value();
             //const List<lduMatrix::solverPerformance> sp(iter().stream());
             //const scalar residual = sp.first().initialResidual();
@@ -87,14 +87,14 @@ bool Foam::hotWireControl::criteriaSatisfied()
             //bool absCheck = residual < residualControl_[fieldI].absTol;
             //achieved = achieved && absCheck;
 
-            //if (debug)
-            //{
-                //Info<< algorithmName_ << " solution statistics:" << endl;
+            if (true)
+            {
+                Info<< algorithmName_ << " solution statistics:" << endl;
 
-                //Info<< "    " << variableName << ": tolerance = " << residual
-                    //<< " (" << residualControl_[fieldI].absTol << ")"
-                    //<< endl;
-            //}
+                Info<< "    " << variableName << ": tolerance = " << residual
+                    << " (" << residualControl_[fieldI].absTol << ")"
+                    << endl;
+            }
         }
     }
 
