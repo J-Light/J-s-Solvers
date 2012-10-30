@@ -77,7 +77,7 @@ bool Foam::hotWireControl::criteriaSatisfied()
             bool absCheck = 
 				residual.value() < residualControl_[fieldI].absTol;
 				
-            achieved = checked && absCheck;
+            achieved = achieved && absCheck;
 			//Info<<iter().value();
             //const List<lduMatrix::solverPerformance> sp(iter().stream());
             //const scalar residual = sp.first().initialResidual();

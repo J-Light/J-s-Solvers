@@ -59,13 +59,18 @@ int main(int argc, char *argv[])
     dimensionedScalar oldQdot("oldQdot",dimless, 0);
 //	dimensionedScalar NormFactHeatFlux("NormFactHeatFlux",dimless, 0);
     volScalarField eOld = e;
+    bool HeatFluxConverged = false;
     
     hotWireControl hWcontrol(mesh);
 
     Info<< "\nStarting time loop\n" << endl;
 
-    while (runTime.run() && hWcontrol.loop())
+    while (runTime.run())
     {
+		if (HeatFluxConverged)
+		{
+			hWcontrol.loop();
+		}
         // --- upwind interpolation of primitive fields on faces
 
         surfaceScalarField rho_pos
@@ -160,6 +165,7 @@ int main(int argc, char *argv[])
         #include "compressibleCourantNo.H"
         #include "readTimeControls.H"
         #include "setDeltaT.H"
+        #include "readHeatFluxResidual.H"
 
         runTime++;
 
@@ -283,6 +289,11 @@ int main(int argc, char *argv[])
 					
 				Info<<"Heat Flux residual: "
 					<<resHeatFlux.value()<<endl;
+				if (resHeatFlux < HeatFluxResidual)
+				{
+					HeatFluxConverged = true;
+				}
+					
 				oldQdot=tHeatFlux;
 			}
 			
