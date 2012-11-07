@@ -10,4 +10,4 @@ dimensionedScalar HeatFluxResidual
 
 HeatFluxResidual.value() = readScalar(residualDict.lookup("wallHeatFlux"));
 
-Info<<"\nThe Residual value is: "<<HeatFluxResidual.value();
+//Info<<"\nThe Residual value is: "<<HeatFluxResidual.value();

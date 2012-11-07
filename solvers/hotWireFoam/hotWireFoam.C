@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     dimensionedScalar gamma("gamma",dimless, 1.4);
     dimensionedScalar oldQdot("oldQdot",dimless, 0);
 //	dimensionedScalar NormFactHeatFlux("NormFactHeatFlux",dimless, 0);
-    volScalarField eOld = e;
+//    volScalarField eOld = e;
     bool HeatFluxConverged = false;
     
     hotWireControl hWcontrol(mesh);
