@@ -1,4 +1,8 @@
 EXE_INC = \
+	-I$(FOAM_APP)/solvers/compressible/rhoCentralFoam/BCs/lnInclude \
     -I$(LIB_SRC)/finiteVolume/lnInclude
 
-EXE_LIBS = -lfiniteVolume
+EXE_LIBS = \
+	-L$(FOAM_USER_LIBBIN) \
+	-lrhoCentralFoam \
+	-lfiniteVolume
