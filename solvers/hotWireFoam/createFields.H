@@ -111,3 +111,24 @@ autoPtr<compressible::turbulenceModel> turbulence
         thermo
     )
 );
+
+
+surfaceScalarField heatFlux
+(
+    "heatFlux",
+    fvc::interpolate(turbulence->alphaEff())*1.4*fvc::snGrad(e)
+);
+
+volScalarField wallHeatFlux
+(
+	IOobject
+	(
+		"wallHeatFlux",
+		runTime.timeName(),
+        mesh,
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+	),
+	mesh,
+	dimensionedScalar("wallHeatFlux", heatFlux.dimensions(), 0.0)
+);

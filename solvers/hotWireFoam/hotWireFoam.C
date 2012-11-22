@@ -35,6 +35,7 @@ Description
 #include "turbulenceModel.H"
 #include "zeroGradientFvPatchFields.H"
 #include "fixedRhoFvPatchScalarField.H"
+#include "wallFvPatch.H"
 
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
 
@@ -247,6 +248,19 @@ int main(int argc, char *argv[])
         rho.boundaryField() = psi.boundaryField()*p.boundaryField();
 
         turbulence->correct();
+        
+        heatFlux = 
+			fvc::interpolate(turbulence->alphaEff())
+			*1.4
+			*fvc::snGrad(e);
+		
+		const surfaceScalarField::GeometricBoundaryField& patchHeatFlux =
+            heatFlux.boundaryField();
+		
+		forAll(wallHeatFlux.boundaryField(), patchi)
+        {
+            wallHeatFlux.boundaryField()[patchi] = patchHeatFlux[patchi];
+        }
 
         runTime.write();
 
