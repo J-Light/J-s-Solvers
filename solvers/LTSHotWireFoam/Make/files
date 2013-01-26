@@ -1,0 +1,3 @@
+LTSHotWireFoam.C
+
+EXE = $(FOAM_APPBIN)/LTSHotWireFoam
