@@ -147,3 +147,17 @@ volScalarField wallHeatFlux
 	dimensionedScalar("wallHeatFlux", heatFlux.dimensions(), 0.0)
 );
 
+volScalarField wallHeatFluxRes
+(
+	IOobject
+	(
+		"wallHeatFluxRes",
+		runTime.timeName(),
+        mesh,
+        IOobject::READ_IF_PRESENT,
+        IOobject::AUTO_WRITE
+	),
+	mesh,
+	dimensionedScalar("wallHeatFluxRes",dimless, 1.0)
+);
+

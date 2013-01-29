@@ -56,7 +56,8 @@ int main(int argc, char *argv[])
     #include "readFluxScheme.H"
 
     dimensionedScalar v_zero("v_zero", dimVolume/dimTime, 0.0);
-    dimensionedScalar oldQdot("oldQdot",dimless, 0);
+    dimensionedScalar heatFluxResudual("heatFluxResudual", dimless, GREAT);
+    dimensionedScalar OldtHeatFluxRes("OldtHeatFluxRes", dimless, 1.0);
     bool HeatFluxConverged = false;
     
     hotWireControl hWcontrol(mesh);
@@ -65,11 +66,11 @@ int main(int argc, char *argv[])
 
     while (runTime.run())
     {
-		if (HeatFluxConverged)
-		{
-			hWcontrol.loop();
-		}
-        // --- upwind interpolation of primitive fields on faces
+		//if (HeatFluxConverged)
+		//{
+			//hWcontrol.loop();
+		//}
+        //// --- upwind interpolation of primitive fields on faces
 
         surfaceScalarField rho_pos
         (
@@ -265,42 +266,86 @@ int main(int argc, char *argv[])
 			*1.4
 			*fvc::snGrad(e);
 		
-		const surfaceScalarField::GeometricBoundaryField& patchHeatFlux =
-            heatFlux.boundaryField();
+		const surfaceScalarField::GeometricBoundaryField& 
+			patchHeatFlux = heatFlux.boundaryField();
 		
-		forAll(patchHeatFlux, patchi)
+		const surfaceScalarField::GeometricBoundaryField& 
+			oldPatchHeatFlux = heatFlux.oldTime().boundaryField();
+            
+			
+		forAll (patchHeatFlux, patchi)
 		{
 			if (isA<wallFvPatch>(mesh.boundary()[patchi]))
 			{
-				dimensionedScalar tHeatFlux= gSum
-                       (
-                           mesh.magSf().boundaryField()[patchi]
-                          *patchHeatFlux[patchi]
-                       );
-				Info<<"\nWall heat fluxes [W]: "
-					<< tHeatFlux.value() <<endl;
-				
-				dimensionedScalar 
-					resHeatFlux 
-					= 	
-					mag(tHeatFlux-oldQdot)/mag(tHeatFlux);
+				dimensionedScalar tHeatFluxResSqr = gSum
+					(
+						sqr
+						(
+							(
+								patchHeatFlux[patchi]
+								-
+								oldPatchHeatFlux[patchi]
+							)
+							*
+							rDeltaT.boundaryField()[patchi]
+						)
+					);
 					
-				Info<<"Heat Flux residual: "
-					<<resHeatFlux.value()<<endl;
+				dimensionedScalar tHeatFluxRes = sqrt(tHeatFluxResSqr);
 				
-				if (resHeatFlux.value() < 1e-10)
+				if (runTime.timeIndex() <= 10)
 				{
-					HeatFluxConverged = true;
+					if (OldtHeatFluxRes < tHeatFluxRes)
+					{
+						 OldtHeatFluxRes = tHeatFluxRes;
+					}
 				}
-				oldQdot=tHeatFlux;
+				heatFluxResudual
+					= tHeatFluxRes/OldtHeatFluxRes;
+				Info<<"\nWall Heat Flux Residual is: "
+					<<heatFluxResudual.value()<<endl;
 			}
 			
-		}
+		}	
+		
+		//forAll(patchHeatFlux, patchi)
+		//{
+			//if (isA<wallFvPatch>(mesh.boundary()[patchi]))
+			//{
+				//dimensionedScalar tHeatFlux= gSum
+                       //(
+                           //mesh.magSf().boundaryField()[patchi]
+                          //*patchHeatFlux[patchi]
+                       //);
+				//Info<<"\nWall heat fluxes [W]: "
+					//<< tHeatFlux.value() <<endl;
+				
+				//dimensionedScalar 
+					//resHeatFlux 
+					//= 	
+					//mag(tHeatFlux-oldQdot)/mag(tHeatFlux);
+					
+				//Info<<"Heat Flux residual: "
+					//<<resHeatFlux.value()<<endl;
+				
+				//if (resHeatFlux.value() < 1e-10)
+				//{
+					//HeatFluxConverged = true;
+				//}
+				//oldQdot=tHeatFlux;
+			//}
+			
+		//}
 		
 		forAll(wallHeatFlux.boundaryField(), patchi)
         {
             wallHeatFlux.boundaryField()[patchi] = patchHeatFlux[patchi];
         }
+        
+        if (runTime.timeIndex() > 10 && heatFluxResudual.value() < 1e-9)
+        {
+			runTime.writeAndEnd();
+		}
 
         runTime.write();
 
