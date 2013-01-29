@@ -58,11 +58,13 @@ int main(int argc, char *argv[])
     dimensionedScalar v_zero("v_zero", dimVolume/dimTime, 0.0);
     dimensionedScalar heatFluxResudual("heatFluxResudual", dimless, GREAT);
     dimensionedScalar OldtHeatFluxRes("OldtHeatFluxRes", dimless, 1.0);
-    bool HeatFluxConverged = false;
+    //bool HeatFluxConverged = false;
     
     hotWireControl hWcontrol(mesh);
 
     Info<< "\nStarting time loop\n" << endl;
+    
+    #include "readHeatFluxResidual.H"
 
     while (runTime.run())
     {
@@ -295,14 +297,15 @@ int main(int argc, char *argv[])
 				
 				if (runTime.timeIndex() <= 10)
 				{
-					if (OldtHeatFluxRes < tHeatFluxRes)
+					if (tHeatFluxRes > OldtHeatFluxRes)
 					{
 						 OldtHeatFluxRes = tHeatFluxRes;
 					}
 				}
 				heatFluxResudual
 					= tHeatFluxRes/OldtHeatFluxRes;
-				Info<<"\nWall Heat Flux Residual is: "
+				Info<<"Iter: "<<runTime.timeIndex()
+					<<"  :Wall Heat Flux Residual: "
 					<<heatFluxResudual.value()<<endl;
 			}
 			
@@ -342,9 +345,12 @@ int main(int argc, char *argv[])
             wallHeatFlux.boundaryField()[patchi] = patchHeatFlux[patchi];
         }
         
-        if (runTime.timeIndex() > 10 && heatFluxResudual.value() < 1e-9)
+        if (runTime.timeIndex() > 10)
         {
-			runTime.writeAndEnd();
+			if (heatFluxResudual < HeatFluxResidualRequired)
+			{
+				runTime.writeAndEnd();
+			}
 		}
 
         runTime.write();
